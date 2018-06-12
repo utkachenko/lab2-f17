@@ -31,14 +31,43 @@ void shminit() {
 }
 
 int shm_open(int id, char **pointer) {
+    acquire(&(shm_table.lock));
+    for (int i = 0; i< SHM_SIZE; i++) {   //looks through reference table to see if segment exsists
+        if (shm_table.shm_pages[i].id == id) {   //if it does exsist
+            if (mappages(myproc()->pgdir, (char *)PGROUNDUP(myproc()->sz), PGSIZE, V2P(shm_table.shm_pages[i].frame), PTE_W|PTE_U) == -1) {
+	        release(&(shm_table.lock));
+	        return -1;
+	    }
+            shm_table.shm_pages[i].refcnt += 1;       //case 1
+            *pointer = (char *)PGROUNDUP(myproc()->sz);
+            myproc()->sz += PGSIZE;      //update size
+            release(&(shm_table.lock)); 
+            return 0;
+        }
+    }
 
-//you write this
-    //does this work?
-    //
-
-
-
-return 0; //added to remove compiler warning -- you should decide what to return
+    for (int i = 0; i< SHM_SIZE; i++) {
+        if (shm_table.shm_pages[i].id == 0) {     //CASE 2
+            shm_table.shm_pages[i].id = id;		 //and store this information in the shm_table
+            if ((shm_table.shm_pages[i].frame = kalloc()) == 0) {    //get physical address
+                release(&(shm_table.lock));
+                return -1;
+            }
+            memset(shm_table.shm_pages[i].frame, 0, PGSIZE);     //If it doesn’t then it needs to allocate a page 
+            shm_table.shm_pages[i].refcnt = 1;              
+	    if (mappages(myproc()->pgdir, (char *)PGROUNDUP(myproc()->sz), PGSIZE, V2P(shm_table.shm_pages[i].frame), PTE_W|PTE_U) == -1) { //and map it
+	        release(&(shm_table.lock));
+	        return -1;
+	    }
+	    *pointer = (char *)PGROUNDUP(myproc()->sz);   //pointer to virtual address
+            myproc()->sz += PGSIZE;        //update size
+            release(&(shm_table.lock));
+            return 0;
+        }
+    }
+    //release the lock but shouldn't get here
+    release(&(shm_table.lock));
+    return 0;
 }
 
 
