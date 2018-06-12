@@ -31,8 +31,9 @@ void shminit() {
 }
 
 int shm_open(int id, char **pointer) {
+    int i;
     acquire(&(shm_table.lock));
-    for (int i = 0; i< SHM_SIZE; i++) {   //looks through reference table to see if segment exsists
+    for (i = 0; i< SHM_SIZE; i++) {   //looks through reference table to see if segment exsists
         if (shm_table.shm_pages[i].id == id) {   //if it does exsist
             if (mappages(myproc()->pgdir, (char *)PGROUNDUP(myproc()->sz), PGSIZE, V2P(shm_table.shm_pages[i].frame), PTE_W|PTE_U) == -1) {
 	        release(&(shm_table.lock));
@@ -46,7 +47,7 @@ int shm_open(int id, char **pointer) {
         }
     }
 
-    for (int i = 0; i< SHM_SIZE; i++) {
+    for (i = 0; i< SHM_SIZE; i++) {
         if (shm_table.shm_pages[i].id == 0) {     //CASE 2
             shm_table.shm_pages[i].id = id;		 //and store this information in the shm_table
             if ((shm_table.shm_pages[i].frame = kalloc()) == 0) {    //get physical address
@@ -79,7 +80,7 @@ int shm_close(int id) {
     if (shm_table.shm_pages[i].id == id) {
       shm_table.shm_pages[i].refcnt -= 1;
       if (shm_table.shm_pages[i].refcnt <= 0) {
-        shm_table.shm_pages[i].id == 0;
+        shm_table.shm_pages[i].id = 0;
         shm_table.shm_pages[i].frame = 0;
         shm_table.shm_pages[i].refcnt = 0;
       }
@@ -88,5 +89,5 @@ int shm_close(int id) {
     }
   }
   release(&(shm_table.lock));
-  return -1; //added to remove compiler warning -- you should decide what to return
+  return -1;
 }
