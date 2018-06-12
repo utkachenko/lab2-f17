@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 
+const uint SHM_SIZE = 64; //ADDED LAB4 (64 pages in shared memory)
+
 struct {
   struct spinlock lock;
   struct shm_page {
@@ -42,7 +44,11 @@ return 0; //added to remove compiler warning -- you should decide what to return
 
 int shm_close(int id) {
 //you write this too!
-
+  int i;
+  acquire(&(shm_table.lock));
+  for (i = 0; i < SHM_SIZE; i++) {
+    return 0;
+  }
 
 
 
