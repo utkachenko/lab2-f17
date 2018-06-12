@@ -31,7 +31,8 @@ void shminit() {
 int shm_open(int id, char **pointer) {
 
 //you write this
-
+    //does this work?
+    //
 
 
 
